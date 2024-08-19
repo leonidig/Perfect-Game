@@ -20,8 +20,9 @@ choice_in_fight = [
 ]
 
 
-use_heal = [
-    [button.inline("Використати(+15 хп)", b'use_heal')]
+go_or_heal = [
+    [button.inline("Використати(+15 хп)", b'use_heal')],
+    [button.inline("Залишити та йти далі", b'go_1')]
 ]
 
 choice_damage = [

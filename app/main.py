@@ -8,7 +8,7 @@ from sqlalchemy import select
 from classes import Hero, Monster, Base
 from keyboards import inline_keyboards, reply_keyboards
 from db import Main, Session
-from forks.start_plot import plots
+from forks.plots import plots, after_fight
 from forks.collision import start_collision
 
 api_id = getenv("api_id")
@@ -117,8 +117,8 @@ async def start_fight(event):
                 user = session.scalar(select(Main).where(Main.username == first_name))
                 user.heal += 1
                 await event.respond(
-                    f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТи можеш викоритати хілку щоб збільшити своє хп на 15(у тебе {user.heal} хілок)",
-                    buttons=inline_keyboards.use_heal
+                    f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випала 1 хілка\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
+                    buttons=inline_keyboards.go_or_heal
                 )
                 return
 
@@ -151,6 +151,11 @@ async def user_heal(event):
         user.heal -= 1
         hero.hp += 15
         await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп")
+
+@client.on(events.CallbackQuery(pattern=b'go_1'))
+async def go_1(event):
+    traveler_path = "app/assets/traveler.jpg"
+    await client.send_file(event.chat_id, traveler_path, caption=after_fight)
 
 
 @client.on(events.CallbackQuery(pattern=b'LAVE'))
