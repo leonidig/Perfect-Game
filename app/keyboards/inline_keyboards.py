@@ -18,3 +18,8 @@ choice_in_fight = [
     [button.inline("Битися", b'FIGHT')],
     [button.inline("Втікти", b'LAVE')]
 ]
+
+
+use_heal = [
+    [button.inline("Використати(+15 хп)", b'use_heal')]
+]
