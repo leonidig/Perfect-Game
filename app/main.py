@@ -101,12 +101,12 @@ async def fight(event):
         hero.hp -= damage
         if hero.hp <= 0:
             await event.respond(
-                f"Твій герой був побежден монстром. Конец гри.",
+                f"Твій герой був повержен монстром. Конец гри.",
                 buttons=inline_keyboards.start_game
             )
             return
 
-        await event.respond(
+        await event.edit(
             f"Ти завдав {monster.name} {damage_dealt} урону.У {monster.name} залишилось {monster_hp[user_id]} здоров'я."
             f"Монстр нанес тобі урон - {damage}\nу тебе залишилось {hero.hp} здоров'я. Монстр все ще жив.\nПродовжуй битву!",
             buttons=inline_keyboards.choice_in_fight
@@ -177,3 +177,4 @@ async def main():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     client.loop.run_until_complete(main())
+    
