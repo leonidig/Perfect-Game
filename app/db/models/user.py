@@ -8,4 +8,4 @@ class Main(Base):
 
     username: Mapped[str]
     hero: Mapped[str] = None
-    heal: Mapped[int] = mapped_column(default=1)
+    heal: Mapped[int] = mapped_column(default=0)

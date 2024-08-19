@@ -23,3 +23,14 @@ choice_in_fight = [
 use_heal = [
     [button.inline("Використати(+15 хп)", b'use_heal')]
 ]
+
+choice_damage = [
+    button.inline("🎲", b'choice_damage')
+]
+start_gight = [
+    button.inline("Почати Битву", b'start_gight')
+]
+
+kick = [
+    button.inline("Вдприти!", b"kick")
+]

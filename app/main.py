@@ -78,17 +78,36 @@ async def go_to_fight(event):
     else:
         await event.respond("Вибери героя спочатку.")
 
-
 @client.on(events.CallbackQuery(pattern=b'FIGHT'))
+async def choice_damage(event):
+    await event.respond("Ти сам захотів цю бійку\nНатисни на кубик щоб випробовувати свою удачу", buttons=inline_keyboards.choice_damage)
+
+
+@client.on(events.CallbackQuery(pattern=b'choice_damage'))
 async def fight(event):
-    global hero
+    global selected_damage
+    selected_damage = random.randint(0, 20)
+    await event.respond(f"Твоя цифра =  {selected_damage}", buttons=inline_keyboards.kick)
+    global hero, user_id, monster_hp_value
     user_id = event.sender_id
     hero_name = user_heroes.get(user_id)
     hero = heroes.get(hero_name)
     monster_hp_value = monster_hp.get(user_id)
     
+@client.on(events.CallbackQuery(pattern=b'kick'))
+async def start_fight(event):
     if hero and monster_hp_value is not None:
-        damage_dealt = hero.damage
+        damage_dealt = (
+    hero.damage + random.randint(4, 7) if 17 <= selected_damage <= 20 else
+    hero.damage + random.randint(2, 5) if 12 <= selected_damage <= 16 else
+    hero.damage + random.randint(1, 3) if 7 <= selected_damage <= 11 else
+    hero.damage + 1 if 3 <= selected_damage <= 6 else
+    hero.damage if 1 <= selected_damage <= 2 else
+    hero.damage - 5 if selected_damage == 0 else
+    hero.damage
+)
+
+
         monster_hp[user_id] -= damage_dealt
         
         if monster_hp[user_id] <= 0:
@@ -115,10 +134,12 @@ async def fight(event):
         await event.edit(
             f"Ти завдав {monster.name} {damage_dealt} урону.У {monster.name} залишилось {monster_hp[user_id]} здоров'я."
             f"Монстр нанес тобі урон - {damage}\nу тебе залишилось {hero.hp} здоров'я. Монстр все ще жив.\nПродовжуй битву!",
-            buttons=inline_keyboards.choice_in_fight
+            buttons=inline_keyboards.kick
         )
     else:
-        await event.respond("Проблеми з даними о героях або монстрах.")
+        await event.respond("Проблеми з даними о героях або монстрах.")   
+
+
 
 
 @client.on(events.CallbackQuery(pattern=b'use_heal'))
@@ -129,7 +150,7 @@ async def user_heal(event):
         user = session.scalar(select(Main).where(Main.username == first_name))
         user.heal -= 1
         hero.hp += 15
-        await event.respond(f"Ти використав 1 хілку, тепер в тебе їх {user.heal}\nТа {hero.hp}")
+        await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп")
 
 
 @client.on(events.CallbackQuery(pattern=b'LAVE'))
