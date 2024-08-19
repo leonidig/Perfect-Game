@@ -52,7 +52,12 @@ async def choice_plot(event):
     else:
         selected_plot_key = random.choice(list(plots.keys()))
         user_plots[user_id] = selected_plot_key
-        await event.respond(f"Тобі випав сюжет ->\n{plots[selected_plot_key]}", buttons=inline_keyboards.go_to_fight)
+        cave_path = "app/assets/cave.jpg"
+        forest_path = "app/assets/forest.jpg"
+        future_path = 'app/assets/future.jpg'
+        selected_plot_path = (cave_path if selected_plot_key == "plot3" else forest_path if selected_plot_key == "plot1" else future_path)
+        await client.send_file(event.chat_id, selected_plot_path, caption=f"Тобі випав сюжет ->\n{plots[selected_plot_key]}", buttons=inline_keyboards.go_to_fight)
+
 
 
 def select_monster():
@@ -69,8 +74,7 @@ async def go_to_fight(event):
     user_hero = heroes.get(user_heroes.get(user_id))
     
     if user_hero:
-        await event.respond(start_collision + "\nІ тут на тебе виходить...\n" + f"Імʼя: {monster.name}\nЗдоровʼя: {monster.hp}\nУрон: {monster.damage}",
-                            buttons=inline_keyboards.choice_in_fight)
+        await event.respond(start_collision + "\nІ тут на тебе виходить...\n" + f"Імʼя: {monster.name}\nЗдоровʼя: {monster.hp}\nУрон: {monster.damage}", buttons=inline_keyboards.choice_in_fight)
     else:
         await event.respond("Вибери героя спочатку.")
 
@@ -103,8 +107,8 @@ async def fight(event):
             return
 
         await event.respond(
-            f"Ти завдав монстру {damage_dealt} урону. Монстру залишилось {monster_hp[user_id]} здоров'я."
-            f"Монстр нанес тобі урон - {damage}\nу теб е залишилось {hero.hp} здоров'я. Монстр все ще жив.\nПродовжуй битву!",
+            f"Ти завдав {monster.name} {damage_dealt} урону.У {monster.name} залишилось {monster_hp[user_id]} здоров'я."
+            f"Монстр нанес тобі урон - {damage}\nу тебе залишилось {hero.hp} здоров'я. Монстр все ще жив.\nПродовжуй битву!",
             buttons=inline_keyboards.choice_in_fight
         )
     else:
@@ -159,6 +163,8 @@ async def handle_message(event):
                     session.add(user)
                 user_heroes[user_id] = selected_hero
                 await event.respond(f"Твій вибір пав на: {selected_hero}\nПодивимось, чи впорається він з усіма складностями.", buttons=inline_keyboards.start_game)
+            elif selected_hero == "Розпочати Гру!":
+                pass
             else:
                 await event.respond("Герой не знайден (")
 
