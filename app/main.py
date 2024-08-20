@@ -8,7 +8,7 @@ from sqlalchemy import select
 from classes import Hero, Monster, Base
 from keyboards import inline_keyboards, reply_keyboards
 from db import Main, Session
-from forks.plots import plots, after_fight
+from forks.plots import plots, after_fight, road_to_bow_with_arrows, road_to_bow_without_arrows
 from forks.collision import start_collision
 
 api_id = getenv("api_id")
@@ -117,13 +117,18 @@ async def go_to_fight(event):
 
 @client.on(events.CallbackQuery(pattern=b'LAVE'))
 async def escape(event):
+    sender = await event.get_sender()
     user_id = event.sender_id
+    first_name = sender.first_name
     if user_id in go_or_heal:
         await event.respond("Ну будь як мужик, ти захотів битися - бийся\nА я тільки посміюсь з твоєї жалюгідної спроби втекти")
     else:
         go_or_heal[user_id] = "leave"
         if random.randint(0, 1) == 0:
-            await event.respond("Тобі вдалося втекти!", buttons=inline_keyboards.only_go)
+            with Session.begin() as session:
+                user = session.scalar(select(Main).where(Main.username == first_name))
+                user.have_fight = False
+            await event.respond("Тобі вдалося втекти!", buttons=inline_keyboards.next_2)
         else:
             hero_name = user_heroes.get(user_id)
             hero = heroes.get(hero_name)
@@ -139,11 +144,16 @@ async def escape(event):
 
 @client.on(events.CallbackQuery(pattern=b'FIGHT'))
 async def choice_damage(event):
+    sender = await event.get_sender()
     user_id = event.sender_id
+    first_name = sender.first_name
     if user_id in go_or_heal:
         await event.respond("Ти вже обрав подію, її ти не можеш зміти свій вибір")
     else:
         go_or_heal[user_id] = "fight"
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.have_fight = True
         await event.respond("Ти сам захотів цю бійку\nНатисни на кубик щоб випробовувати свою удачу", buttons=inline_keyboards.choice_damage)
 
 
@@ -165,6 +175,7 @@ async def start_fight(event):
     user_id = event.sender_id
     hero_name = user_heroes.get(user_id)
     hero = heroes.get(hero_name)
+    monster_hp_value = monster_hp.get(user_id)
     if hero and monster_hp_value is not None:
         damage_dealt = (
     hero.damage + random.randint(4, 7) if 17 <= selected_damage <= 20 else
@@ -246,6 +257,24 @@ async def check_answer_1(event):
     else:
         await event.respond("Тобі треба підтягнути знання у програмуванні, але нічого, ти переміг монстра та можеш йти далі", buttons=inline_keyboards.next_2)
 
+
+
+@client.on(events.CallbackQuery(pattern=b'next_2'))
+async def go_to_church(event):
+    sender = await event.get_sender()
+    user_id = event.sender_id
+    first_name = sender.first_name
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        if user.have_fight:
+            await event.respond(road_to_bow_with_arrows)
+        else:
+            await event.respond(road_to_bow_without_arrows, buttons=inline_keyboards.next_3)
+
+    
+@client.on(events.CallbackQuery(pattern=b'go_to_bow'))
+async def go_to_bow(event):
+    await event.respond("Цей поход буде нелегкий, тому пропоную випити тобі хілку")
 
 
 

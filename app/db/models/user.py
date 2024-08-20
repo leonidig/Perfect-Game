@@ -10,3 +10,4 @@ class Main(Base):
     hero: Mapped[str] = None
     heal: Mapped[int] = mapped_column(default=0)
     arrows: Mapped[int] = mapped_column(default=0)
+    have_fight: Mapped[bool] = mapped_column(default=False)

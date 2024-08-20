@@ -47,7 +47,7 @@ go_1 = [
 
 arrows_choice = [
     [button.inline("Відповісти", b"answer_choice")],
-    [button.inline("Йти далі та не отримати стріли", b'go_2')]
+    [button.inline("Йти далі та не отримати стріли", b'next_2')]
 ]
 
 
@@ -61,4 +61,9 @@ first_question = [
 
 next_2 = [
     button.inline("Далі", b'next_2')
+]
+
+
+next_3 = [
+    button.inline("Почати путь за луком", b'go_to_bow')
 ]
