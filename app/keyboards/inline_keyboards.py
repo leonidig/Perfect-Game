@@ -29,6 +29,10 @@ only_go = [
     button.inline("Йти далі", b'go_1')
 ]
 
+only_heal = [
+    button.inline("Випити 🧪", b'use_heal')
+]
+
 choice_damage = [
     button.inline("🎲", b'choice_damage')
 ]
@@ -66,4 +70,21 @@ next_2 = [
 
 next_3 = [
     button.inline("Почати путь за луком", b'go_to_bow')
+]
+
+go_4 = [
+    [button.inline("Почати путь", b'go_4')]
+]
+
+go_to_merchant = [
+    [button.inline("Поговорити з торговцем", b'dialog_with_merchant')]
+]
+merchant_choice = [
+    [button.inline("Продати ( +20 🪙)", b'do_trade')],
+    [button.inline("Йти далі", b'go_5')]
+]
+
+
+go_6 = [
+    button.inline("Залишити табір", b'go_6')
 ]

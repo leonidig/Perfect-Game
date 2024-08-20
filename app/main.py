@@ -8,7 +8,15 @@ from sqlalchemy import select
 from classes import Hero, Monster, Base
 from keyboards import inline_keyboards, reply_keyboards
 from db import Main, Session
-from forks.plots import plots, after_fight, road_to_bow_with_arrows, road_to_bow_without_arrows
+from forks.plots import (plots,
+                         after_fight,
+                         road_to_bow_with_arrows,
+                         road_to_bow_without_arrows,
+                         merchant,
+                         confirm_trade,
+                         not_confirm_trade
+                         )
+
 from forks.collision import start_collision
 
 api_id = getenv("api_id")
@@ -196,6 +204,7 @@ async def start_fight(event):
             with Session.begin() as session:
                 user = session.scalar(select(Main).where(Main.username == first_name))
                 user.heal += 1
+                user.hp = hero.hp
                 await event.edit(
                     f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випала 1 хілка\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
                     buttons=inline_keyboards.go_or_heal
@@ -228,6 +237,7 @@ async def user_heal(event):
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
         user.heal -= 1
+        user.hp += 15
         hero.hp += 15
         await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп", buttons=inline_keyboards.go_1)
 
@@ -253,6 +263,7 @@ async def check_answer_1(event):
         with Session.begin() as session:
             user = session.scalar(select(Main).where(Main.username == first_name))
             user.arrows += 10
+            user.heal -= 1
         await event.respond("Молодець!\nПравильна відповідь, тримай 10➶➶", buttons=inline_keyboards.next_2)
     else:
         await event.respond("Тобі треба підтягнути знання у програмуванні, але нічого, ти переміг монстра та можеш йти далі", buttons=inline_keyboards.next_2)
@@ -262,19 +273,47 @@ async def check_answer_1(event):
 @client.on(events.CallbackQuery(pattern=b'next_2'))
 async def go_to_church(event):
     sender = await event.get_sender()
-    user_id = event.sender_id
     first_name = sender.first_name
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
-        if user.have_fight:
-            await event.respond(road_to_bow_with_arrows)
+        if user.have_fight == 1:
+            await event.respond(road_to_bow_with_arrows, buttons=inline_keyboards.next_3)
         else:
             await event.respond(road_to_bow_without_arrows, buttons=inline_keyboards.next_3)
 
     
 @client.on(events.CallbackQuery(pattern=b'go_to_bow'))
 async def go_to_bow(event):
-    await event.respond("Цей поход буде нелегкий, тому пропоную випити тобі хілку")
+    await event.respond("Цей поход буде нелегкий, тому пропоную випити тобі хілку", buttons=inline_keyboards.only_heal)
+    await event.respond("Або можеш йти по хардкору та зберігти хілку", buttons=inline_keyboards.go_4)
+
+
+@client.on(events.CallbackQuery(pattern= b'go_4'))
+async def go_4(event):
+    await event.respond(merchant, buttons=inline_keyboards.go_to_merchant)
+
+
+@client.on(events.CallbackQuery(pattern=b'dialog_with_merchant'))
+async def merchant_choice(event):
+    await event.respond('Що ти обираєш зробити', buttons=inline_keyboards.merchant_choice)
+
+@client.on(events.CallbackQuery(pattern=b'do_trade'))
+async def do_trade(event):
+    first_name = event.sender.first_name
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        user.coins += 20
+    await event.respond(confirm_trade, buttons=inline_keyboards.go_6)
+
+
+@client.on(events.CallbackQuery(pattern=b'go_5'))
+async def left_trade(event):        
+    await event.respond(not_confirm_trade, buttons=inline_keyboards.go_6)
+
+
+@client.on(events.CallbackQuery(pattern=b'go_6'))
+async def go_6(event):
+    await event.respond("Пока!")
 
 
 
