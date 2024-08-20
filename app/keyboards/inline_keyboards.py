@@ -25,6 +25,10 @@ go_or_heal = [
     [button.inline("Залишити та йти далі", b'go_1')]
 ]
 
+only_go = [
+    button.inline("Йти далі", b'go_1')
+]
+
 choice_damage = [
     button.inline("🎲", b'choice_damage')
 ]
@@ -34,4 +38,27 @@ start_gight = [
 
 kick = [
     button.inline("Вдприти!", b"kick")
+]
+
+go_1 = [
+    button.inline("Йти далі",  b'go_1')
+]
+
+
+arrows_choice = [
+    [button.inline("Відповісти", b"answer_choice")],
+    [button.inline("Йти далі та не отримати стріли", b'go_2')]
+]
+
+
+first_question = [
+    [button.inline("{1, 2, 3, 4}",  b'q1_false_1')],
+    [button.inline("{2, 3}",  b'q1_true')],
+    [button.inline("{1, 3}",  b'q1_false_2')],
+    [button.inline("{1, 4}",  b'q1_false_3')]
+]
+
+
+next_2 = [
+    button.inline("Далі", b'next_2')
 ]

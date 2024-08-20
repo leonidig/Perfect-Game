@@ -9,3 +9,4 @@ class Main(Base):
     username: Mapped[str]
     hero: Mapped[str] = None
     heal: Mapped[int] = mapped_column(default=0)
+    arrows: Mapped[int] = mapped_column(default=0)

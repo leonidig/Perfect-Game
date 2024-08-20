@@ -26,6 +26,7 @@ monsters = [Monster("Grew", 40, 5), Monster("Gabgala", 60, 10)]
 
 current_user_state = {}
 user_plots = {}
+go_or_heal = {}
 user_heroes = {}
 monster_hp = {}
 
@@ -36,6 +37,41 @@ async def start(event):
     user_id = event.sender_id
     first_name = sender.first_name
     await event.respond(f"Привіт, {first_name}! Ти потрапив у світ битв з монстрами та захоплюючими подорожами по казковому світу.", buttons=reply_keyboards.start_game)
+
+@client.on(events.NewMessage(pattern="Розпочати Гру!"))
+async def choice_hero(event):
+    await event.respond("Дивись які є персонажі, щоб обрати одного з них - напиши його імʼя: ")
+
+    for hero in heroes.values():
+        await event.respond(f'''
+- Імʼя: {hero.name}
+- Здоровʼя: {hero.hp}
+- Урон: {hero.damage}
+''')
+
+    user_id = event.sender_id
+    current_user_state[user_id] = 'waiting_for_choice'
+
+
+@client.on(events.NewMessage())
+async def handle_message(event):
+    user_id = event.sender_id
+
+    if user_id in current_user_state:
+        state = current_user_state[user_id]
+
+        if state == 'waiting_for_choice':
+            selected_hero = event.text.title()
+            if selected_hero in heroes.keys():
+                with Session.begin() as session:
+                    user = Main(username=event.sender.first_name, hero=selected_hero)
+                    session.add(user)
+                user_heroes[user_id] = selected_hero
+                await event.respond(f"Твій вибір пав на: {selected_hero}\nПодивимось, чи впорається він з усіма складностями.", buttons=inline_keyboards.start_game)
+            elif selected_hero == "Розпочати Гру!":
+                pass
+            else:
+                await event.respond("Герой не знайден (")
 
 
 @client.on(events.CallbackQuery(pattern=b'start'))
@@ -74,13 +110,41 @@ async def go_to_fight(event):
     user_hero = heroes.get(user_heroes.get(user_id))
     
     if user_hero:
-        await event.respond(start_collision + "\nІ тут на тебе виходить...\n" + f"Імʼя: {monster.name}\nЗдоровʼя: {monster.hp}\nУрон: {monster.damage}", buttons=inline_keyboards.choice_in_fight)
+        monster_path = "app/assets/gabgala.gif" if monster.name == "Gabgala" else "app/assets/grew.gif"
+        await client.send_file(event.chat_id, monster_path, caption=f"{start_collision}\nІ тут на тебе виходить...\n" + f"Імʼя: {monster.name}\nЗдоровʼя: {monster.hp}\nУрон: {monster.damage}", buttons=inline_keyboards.choice_in_fight)
     else:
         await event.respond("Вибери героя спочатку.")
 
+@client.on(events.CallbackQuery(pattern=b'LAVE'))
+async def escape(event):
+    user_id = event.sender_id
+    if user_id in go_or_heal:
+        await event.respond("Ну будь як мужик, ти захотів битися - бийся\nА я тільки посміюсь з твоєї жалюгідної спроби втекти")
+    else:
+        go_or_heal[user_id] = "leave"
+        if random.randint(0, 1) == 0:
+            await event.respond("Тобі вдалося втекти!", buttons=inline_keyboards.only_go)
+        else:
+            hero_name = user_heroes.get(user_id)
+            hero = heroes.get(hero_name)
+            if hero:
+                hero.hp -= 10
+                if hero.hp <= 0:
+                    await event.respond(f"Ти спробував втекти, але монстр наздогнав тебе і переміг. Конец гри.")
+                else:
+                    await event.respond(f"Спроба втечі не вдалася. Твій герой має {hero.hp} здоров'я. Монстр все ще жив.\nЩо ти будеш робити?", buttons=inline_keyboards.kick)
+            else:
+                await event.respond("Вибери героя спочатку.")
+
+
 @client.on(events.CallbackQuery(pattern=b'FIGHT'))
 async def choice_damage(event):
-    await event.respond("Ти сам захотів цю бійку\nНатисни на кубик щоб випробовувати свою удачу", buttons=inline_keyboards.choice_damage)
+    user_id = event.sender_id
+    if user_id in go_or_heal:
+        await event.respond("Ти вже обрав подію, її ти не можеш зміти свій вибір")
+    else:
+        go_or_heal[user_id] = "fight"
+        await event.respond("Ти сам захотів цю бійку\nНатисни на кубик щоб випробовувати свою удачу", buttons=inline_keyboards.choice_damage)
 
 
 @client.on(events.CallbackQuery(pattern=b'choice_damage'))
@@ -93,9 +157,14 @@ async def fight(event):
     hero_name = user_heroes.get(user_id)
     hero = heroes.get(hero_name)
     monster_hp_value = monster_hp.get(user_id)
+
+    
     
 @client.on(events.CallbackQuery(pattern=b'kick'))
 async def start_fight(event):
+    user_id = event.sender_id
+    hero_name = user_heroes.get(user_id)
+    hero = heroes.get(hero_name)
     if hero and monster_hp_value is not None:
         damage_dealt = (
     hero.damage + random.randint(4, 7) if 17 <= selected_damage <= 20 else
@@ -116,7 +185,7 @@ async def start_fight(event):
             with Session.begin() as session:
                 user = session.scalar(select(Main).where(Main.username == first_name))
                 user.heal += 1
-                await event.respond(
+                await event.edit(
                     f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випала 1 хілка\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
                     buttons=inline_keyboards.go_or_heal
                 )
@@ -141,7 +210,6 @@ async def start_fight(event):
 
 
 
-
 @client.on(events.CallbackQuery(pattern=b'use_heal'))
 async def user_heal(event):
     sender = await event.get_sender()
@@ -150,66 +218,35 @@ async def user_heal(event):
         user = session.scalar(select(Main).where(Main.username == first_name))
         user.heal -= 1
         hero.hp += 15
-        await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп")
+        await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп", buttons=inline_keyboards.go_1)
 
 @client.on(events.CallbackQuery(pattern=b'go_1'))
 async def go_1(event):
     traveler_path = "app/assets/traveler.jpg"
     await client.send_file(event.chat_id, traveler_path, caption=after_fight)
+    await event.respond("Дай мені відповідь на запитання, і отримаєш стріли", buttons=inline_keyboards.arrows_choice)
 
 
-@client.on(events.CallbackQuery(pattern=b'LAVE'))
-async def escape(event):
-    user_id = event.sender_id
-    if random.randint(0, 1) == 0:
-        await event.respond("Тобі вдалося втекти!")
+@client.on(events.CallbackQuery)
+async def first_task(event):
+    if event.data == b"answer_choice":
+        await event.respond("Який результат виконання виразу\n{1, 2, 3} & {2, 3, 4}", buttons=inline_keyboards.first_question)
+
+
+@client.on(events.CallbackQuery(pattern=b'q1_.*'))
+async def check_answer_1(event):
+    correct_answer = b'q1_true'
+    sender = await event.get_sender()
+    first_name = sender.first_name
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.arrows += 10
+        await event.respond("Молодець!\nПравильна відповідь, тримай 10➶➶", buttons=inline_keyboards.next_2)
     else:
-        hero_name = user_heroes.get(user_id)
-        hero = heroes.get(hero_name)
-        if hero:
-            hero.hp -= 10
-            if hero.hp <= 0:
-                await event.respond(f"Ти спробував втекти, але монстр наздогнав тебе і переміг. Конец гри.")
-            else:
-                await event.respond(f"Спроба втечі не вдалася. Твій герой має {hero.hp} здоров'я. Монстр все ще жив.\nЩо ти будеш робити?", buttons=inline_keyboards.choice_in_fight)
-        else:
-            await event.respond("Вибери героя спочатку.")
+        await event.respond("Тобі треба підтягнути знання у програмуванні, але нічого, ти переміг монстра та можеш йти далі", buttons=inline_keyboards.next_2)
 
 
-@client.on(events.NewMessage(pattern="Розпочати Гру!"))
-async def choice_hero(event):
-    await event.respond("Дивись які є персонажі, щоб обрати одного з них - напиши його імʼя: ")
-
-    for hero in heroes.values():
-        await event.respond(f'''
-- Імʼя: {hero.name}
-- Здоровʼя: {hero.hp}
-- Урон: {hero.damage}
-''')
-
-    user_id = event.sender_id
-    current_user_state[user_id] = 'waiting_for_choice'
-
-
-@client.on(events.NewMessage())
-async def handle_message(event):
-    user_id = event.sender_id
-
-    if user_id in current_user_state:
-        state = current_user_state[user_id]
-
-        if state == 'waiting_for_choice':
-            selected_hero = event.text
-            if selected_hero in heroes.keys():
-                with Session.begin() as session:
-                    user = Main(username=event.sender.first_name, hero=selected_hero)
-                    session.add(user)
-                user_heroes[user_id] = selected_hero
-                await event.respond(f"Твій вибір пав на: {selected_hero}\nПодивимось, чи впорається він з усіма складностями.", buttons=inline_keyboards.start_game)
-            elif selected_hero == "Розпочати Гру!":
-                pass
-            else:
-                await event.respond("Герой не знайден (")
 
 
 async def main():
