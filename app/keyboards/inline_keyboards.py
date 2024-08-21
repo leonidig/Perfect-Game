@@ -105,6 +105,14 @@ send_dice = [
 ]
 
 
+next_8 = [
+    button.inline("Далі", b'next_8')
+]
+
 hit = [
     button.inline("Бити", b'hit')
+]
+
+final_attack_2 = [
+        [button.inline("Бий монстра", b'do_attack')]
 ]
