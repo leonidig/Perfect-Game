@@ -41,7 +41,7 @@ start_gight = [
 ]
 
 kick = [
-    button.inline("Вдприти!", b"kick")
+    button.inline("Вдaрити!", b"kick")
 ]
 
 go_1 = [
@@ -87,4 +87,24 @@ merchant_choice = [
 
 go_6 = [
     button.inline("Залишити табір", b'go_6')
+]
+
+
+go_7 = [
+    button.inline("Йти по лісу", b'go_7')
+]
+
+
+start_gight_2 = [
+    button.inline("Вдарити!", b'kick_2')
+]
+
+
+send_dice = [
+    button.inline("🎲", b'dice')
+]
+
+
+hit = [
+    button.inline("Бити", b'hit')
 ]
