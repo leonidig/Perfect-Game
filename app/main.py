@@ -16,7 +16,8 @@ from forks.plots import (plots,
                          confirm_trade,
                          not_confirm_trade,
                          forest,
-                         monsters_plot
+                         monsters_plot,
+                         guild_choice
                          )
 
 from forks.collision import start_collision
@@ -29,7 +30,8 @@ client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_tok
 
 heroes = {
     "Brew": Hero("Brew", 50, 5),
-    "Aboba": Hero("Aboba", 80, 10)
+    "Aboba": Hero("Aboba", 80, 10),
+    "Test": Hero("Test", 150, 75)
 }
 
 monsters = [Monster("Grew", 40, 5), Monster("Gabgala", 60, 10)]
@@ -124,6 +126,7 @@ async def go_to_fight(event):
         await client.send_file(event.chat_id, monster_path, caption=f"{start_collision}\nІ тут на тебе виходить...\n" + f"Імʼя: {monster.name}\nЗдоровʼя: {monster.hp}\nУрон: {monster.damage}", buttons=inline_keyboards.choice_in_fight)
     else:
         await event.respond("Вибери героя спочатку.")
+
 
 @client.on(events.CallbackQuery(pattern=b'LAVE'))
 async def escape(event):
@@ -252,6 +255,7 @@ async def user_heal(event):
 
 @client.on(events.CallbackQuery(pattern=b'go_1'))
 async def go_1(event):
+    global traveler_path
     traveler_path = "app/assets/traveler.jpg"
     await client.send_file(event.chat_id, traveler_path, caption=after_fight)
     await event.respond("Дай мені відповідь на запитання, і отримаєш стріли", buttons=inline_keyboards.arrows_choice)
@@ -268,6 +272,7 @@ async def check_answer_1(event):
     correct_answer = b'q1_true'
     sender = await event.get_sender()
     first_name = sender.first_name
+
     if event.data == correct_answer:
         with Session.begin() as session:
             user = session.scalar(select(Main).where(Main.username == first_name))
@@ -282,6 +287,7 @@ async def check_answer_1(event):
 async def go_to_church(event):
     sender = await event.get_sender()
     first_name = sender.first_name
+
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
         if user.have_fight == 1:
@@ -346,8 +352,6 @@ async def choice_monster_damage(event):
     await event.respond(f"Випало число = {monster_damage_choice}", buttons=inline_keyboards.next_8)
 
 
-
-
 monster_hp_dict = {}
 
 @client.on(events.CallbackQuery(pattern=b'next_8'))
@@ -366,6 +370,7 @@ async def next_8(event):
     monster_hp_dict[user_id] = monster_hp
     
     await event.respond("Приготуйся до атаки!", buttons=inline_keyboards.final_attack_2)
+
 
 @client.on(events.CallbackQuery(pattern=b'do_attack'))
 async def do_attack(event):
@@ -392,21 +397,21 @@ async def do_attack(event):
     selected_damage = random.randint(0, 20)
 
     if hero:
-        # if 17 <= selected_damage <= 20:
-        #     damage_dealt = hero.damage + random.randint(5, 8)
-        # elif 12 <= selected_damage <= 16:
-        #     damage_dealt = hero.damage + random.randint(3, 6)
-        # elif 7 <= selected_damage <= 11:
-        #     damage_dealt = hero.damage + random.randint(2, 4)
-        # elif 3 <= selected_damage <= 6:
-        #     damage_dealt = hero.damage + 2
-        # elif 1 <= selected_damage <= 2:
-        #     damage_dealt = hero.damage
-        # elif selected_damage == 0:
-        #     damage_dealt = hero.damage - 3
-        # else:
-        #     damage_dealt = hero.damage
-        damage_dealt = 25
+        if 17 <= selected_damage <= 20:
+            damage_dealt = hero.damage + random.randint(8, 10)
+        elif 12 <= selected_damage <= 16:
+            damage_dealt = hero.damage + random.randint(4, 7)
+        elif 7 <= selected_damage <= 11:
+            damage_dealt = hero.damage + random.randint(3, 5)
+        elif 3 <= selected_damage <= 6:
+            damage_dealt = hero.damage + 3
+        elif 1 <= selected_damage <= 2:
+            damage_dealt = hero.damage + 1
+        elif selected_damage == 0:
+            damage_dealt = hero.damage - 3
+        else:
+            damage_dealt = hero.damage
+   
 
 
         monster_hp_dict[user_id] -= damage_dealt
@@ -414,11 +419,13 @@ async def do_attack(event):
         if monster_hp_dict[user_id] <= 0:
             with Session.begin() as session:
                 user = session.scalar(select(Main).where(Main.username == first_name))
-                user.heal += 1
+                user.heal += 2
                 user.hp = hero.hp
+                user.arrows + 5
+                user.coins += 15
                 await event.edit(
-                    f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випала 1 хілка\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
-                    buttons=inline_keyboards.go_or_heal
+                    f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випало:\n-Хілки: 2\nСтріли: 5\nМонети: 15\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
+                    buttons=inline_keyboards.enter_1
                 )
                 return
 
@@ -438,7 +445,62 @@ async def do_attack(event):
     else:
         await event.respond("Проблеми з даними о героях або монстрах.")
 
- 
+
+@client.on(events.CallbackQuery(pattern=b'road_to_bow'))
+async def road_to_bow(event):
+    global traveler_path
+    await client.send_file(event.chat_id, traveler_path, caption="Привіт, думаю ти мене памʼятаєш.\nЯ знову з вопросами.\nЯкий результат виконання виразу list(map(lambda x: x * 2, [1, 2, 3]))?", buttons=inline_keyboards.second_question)
+
+
+@client.on(events.CallbackQuery(pattern=b'q2_.*'))
+async def check_answer_2(event):
+    correct_answer = b'q2_true'
+    global first_name
+    sender = await event.get_sender()
+    first_name = sender.first_name
+
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.arrows += 5
+            user.heal += 1
+        await event.respond("Молодець!\nПравильна відповідь, тримай 10➶➶\nТа 1 хілку🧪", buttons=inline_keyboards.enter_2)
+    else:
+        await event.respond("Тобі треба підтягнути знання у програмуванні, але нічого, ти переміг монстра та можеш йти далі", buttons=inline_keyboards.enter_2)
+
+
+@client.on(events.CallbackQuery(pattern=b'enter_2'))
+async def enter_2(event):
+    guild_path = "app/assets/guild.webp"
+    await client.send_message(
+        event.chat_id, 
+        guild_choice, 
+        file=guild_path, 
+        buttons=inline_keyboards.guild_choice
+    )
+
+@client.on(events.CallbackQuery(pattern=b'guild_.*'))
+async def save_user_guild(event):
+    global first_name
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        if user is None:
+            await event.respond("Користувача не знайдено.")
+            return
+        
+        if event.data == b'guild_mages':
+            user.guild = "Mages"
+        elif event.data == b'guild_fighters':
+            user.guild = "Fighters"
+        elif event.data == b'guild_trackers':
+            user.guild = "Trackers"
+        else:
+            await event.respond("Помилка при виборі гільдії")
+            return
+        
+        session.add(user)
+        await event.respond(f"Обрана гільдія: {user.guild}")
+
 
 async def main():
     await client.start()
