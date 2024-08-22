@@ -40,8 +40,8 @@ start_gight = [
     button.inline("Почати Битву", b'start_gight')
 ]
 
-kick = [
-    button.inline("Вдaрити!", b"kick")
+first_hit = [
+    button.inline("Вдaрити!", b"first_hit")
 ]
 
 go_1 = [

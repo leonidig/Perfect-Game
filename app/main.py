@@ -150,7 +150,7 @@ async def escape(event):
                 if hero.hp <= 0:
                     await event.respond(f"Ти спробував втекти, але монстр наздогнав тебе і переміг. Конец гри.")
                 else:
-                    await event.respond(f"Спроба втечі не вдалася. Твій герой має {hero.hp} здоров'я. Монстр все ще жив.\nЩо ти будеш робити?", buttons=inline_keyboards.kick)
+                    await event.respond(f"Спроба втечі не вдалася. Твій герой має {hero.hp} здоров'я. Монстр все ще жив.\nЩо ти будеш робити?", buttons=inline_keyboards.first_hit)
             else:
                 await event.respond("Вибери героя спочатку.")
 
@@ -174,7 +174,7 @@ async def choice_damage(event):
 async def fight(event):
     global selected_damage
     selected_damage = random.randint(0, 20)
-    await event.respond(f"Твоя цифра =  {selected_damage}", buttons=inline_keyboards.kick)
+    await event.respond(f"Твоя цифра =  {selected_damage}", buttons=inline_keyboards.first_hit)
     global hero, user_id, monster_hp_value
     user_id = event.sender_id
     hero_name = user_heroes.get(user_id)
@@ -182,8 +182,8 @@ async def fight(event):
     monster_hp_value = monster_hp.get(user_id)
 
     
-#TODO Globals for veriables
-@client.on(events.CallbackQuery(pattern=b'kick'))
+
+@client.on(events.CallbackQuery(pattern=b'first_hit'))
 async def start_fight(event):
     #TODO global scope
     global selected_damage
@@ -231,7 +231,7 @@ async def start_fight(event):
         await event.edit(
             f"Ти завдав {monster.name} {damage_dealt} урону.У {monster.name} залишилось {monster_hp[user_id]} здоров'я."
             f"Монстр нанес тобі урон - {damage}\nу тебе залишилось {hero.hp} здоров'я. Монстр все ще жив.\nПродовжуй битву!",
-            buttons=inline_keyboards.kick
+            buttons=inline_keyboards.first_hit
         )
     else:
         await event.respond("Проблеми з даними о героях або монстрах.")   
@@ -341,7 +341,7 @@ async def go_7(event):
 
 
 @client.on(events.CallbackQuery(pattern=b'kick_2'))
-async def fight_2(event):
+async def hitting_2(event):
     await event.respond("Давай оберемо урон який тобі будуть зазначати монстри, на основі рандомного числа. чим більше число тим більше урон у монстрів", buttons=inline_keyboards.send_dice)
 
 
@@ -421,7 +421,7 @@ async def do_attack(event):
                 user = session.scalar(select(Main).where(Main.username == first_name))
                 user.heal += 2
                 user.hp = hero.hp
-                user.arrows + 5
+                user.arrows += 5
                 user.coins += 15
                 await event.edit(
                     f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випало:\n-Хілки: 2\nСтріли: 5\nМонети: 15\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
