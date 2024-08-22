@@ -170,38 +170,37 @@ async def choice_damage(event):
         await event.respond("Ти сам захотів цю бійку\nНатисни на кубик щоб випробовувати свою удачу", buttons=inline_keyboards.choice_damage)
 
 
+selected_damage = 0
 @client.on(events.CallbackQuery(pattern=b'choice_damage'))
 async def fight(event):
     global selected_damage
-    selected_damage = random.randint(0, 20)
-    await event.respond(f"Твоя цифра =  {selected_damage}", buttons=inline_keyboards.first_hit)
+    selected_damage = selected_damage + random.randint(0, 20)
+    await event.respond(f"Твоя цифра = {selected_damage}", buttons=inline_keyboards.first_hit)
     global hero, user_id, monster_hp_value
     user_id = event.sender_id
     hero_name = user_heroes.get(user_id)
     hero = heroes.get(hero_name)
     monster_hp_value = monster_hp.get(user_id)
 
-    
-
 @client.on(events.CallbackQuery(pattern=b'first_hit'))
 async def start_fight(event):
-    #TODO global scope
     global selected_damage
     user_id = event.sender_id
     hero_name = user_heroes.get(user_id)
     global hero
     hero = heroes.get(hero_name)
     monster_hp_value = monster_hp.get(user_id)
-    if hero and monster_hp_value is not None:
+
+    if hero and monster_hp_value is not None and selected_damage is not None:
         damage_dealt = (
-    hero.damage + random.randint(4, 7) if 17 <= selected_damage <= 20 else
-    hero.damage + random.randint(2, 5) if 12 <= selected_damage <= 16 else
-    hero.damage + random.randint(1, 3) if 7 <= selected_damage <= 11 else
-    hero.damage + 1 if 3 <= selected_damage <= 6 else
-    hero.damage if 1 <= selected_damage <= 2 else
-    hero.damage - 5 if selected_damage == 0 else
-    hero.damage
-)
+            hero.damage + random.randint(4, 7) if 17 <= selected_damage <= 20 else
+            hero.damage + random.randint(2, 5) if 12 <= selected_damage <= 16 else
+            hero.damage + random.randint(1, 3) if 7 <= selected_damage <= 11 else
+            hero.damage + 1 if 3 <= selected_damage <= 6 else
+            hero.damage if 1 <= selected_damage <= 2 else
+            hero.damage - 5 if selected_damage == 0 else
+            hero.damage
+        )
 
 
         monster_hp[user_id] -= damage_dealt
@@ -471,13 +470,9 @@ async def check_answer_2(event):
 
 @client.on(events.CallbackQuery(pattern=b'enter_2'))
 async def enter_2(event):
-    guild_path = "app/assets/guild.webp"
-    await client.send_message(
-        event.chat_id, 
-        guild_choice, 
-        file=guild_path, 
-        buttons=inline_keyboards.guild_choice
-    )
+    guild_path = "app/assets/guild.png"
+    await client.send_file(event.chat_id, guild_path, caption=guild_choice, buttons=inline_keyboards.guild_choice)
+    
 
 @client.on(events.CallbackQuery(pattern=b'guild_.*'))
 async def save_user_guild(event):
@@ -487,19 +482,24 @@ async def save_user_guild(event):
         if user is None:
             await event.respond("Користувача не знайдено.")
             return
-        
-        if event.data == b'guild_mages':
-            user.guild = "Mages"
-        elif event.data == b'guild_fighters':
-            user.guild = "Fighters"
-        elif event.data == b'guild_trackers':
-            user.guild = "Trackers"
+        elif user.guild == "NOTHING":
+            match event.data:
+                case b'guild_mages':
+                    user.guild = "Mages"
+                case b'guild_fighters':
+                    user.guild = "Fighters"
+                case b'guild_trackers':
+                    user.guild = "Trackers"
+                case _:
+                    await event.respond("Помилка при виборі гільдії")
+                    return 
         else:
-            await event.respond("Помилка при виборі гільдії")
+            await event.respond("Неможна переобрати гільдію")
             return
         
         session.add(user)
         await event.respond(f"Обрана гільдія: {user.guild}")
+
 
 
 async def main():

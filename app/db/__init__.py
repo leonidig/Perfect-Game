@@ -19,5 +19,5 @@ def down():
 from .models import Main
 
 
-# down()
+down()
 up()
