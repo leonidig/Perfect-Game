@@ -17,7 +17,8 @@ from forks.plots import (plots,
                          not_confirm_trade,
                          forest,
                          monsters_plot,
-                         guild_choice
+                         guild_choice,
+                         question_
                          )
 
 from forks.collision import start_collision
@@ -252,6 +253,7 @@ async def user_heal(event):
             hero.hp += 15
             await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп", buttons=inline_keyboards.go_1)
 
+traveler_path = ""
 @client.on(events.CallbackQuery(pattern=b'go_1'))
 async def go_1(event):
     global traveler_path
@@ -498,7 +500,47 @@ async def save_user_guild(event):
             return
         
         session.add(user)
-        await event.respond(f"Обрана гільдія: {user.guild}")
+        await event.respond(f"Обрана гільдія: {user.guild}", buttons=inline_keyboards.guild_action_1)
+
+
+@client.on(events.CallbackQuery(pattern=b'guild_action_1'))
+async def guild_action_1(event):
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        guild = user.guild
+    guild_member_path = "app/assets/guild_member.gif"
+    await client.send_file(event.chat_id, guild_member_path, caption=question_, buttons=inline_keyboards.third_question)
+
+@client.on(events.CallbackQuery(pattern=b'q3_.*'))
+async def check_answer_3(event):
+    correct_answer = b'q3_true'
+    global first_name
+    sender = await event.get_sender()
+    first_name = sender.first_name
+
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            match user.guild:
+                case "Mages":
+                    user.slot = "lucky"
+                    await event.respond("Правильно, тримай собі + к удачі, це не буде зайвим")
+                case "Fighters":
+                    user.arrows += 15
+                    await event.respond("Вітаємо,ти не даремно обрав нашу гільдію - тримай 15 стріл➶➶")
+                case "Trackers":
+                    user.slot += "fireball"
+                    await event.respond("Ключ до успіху з нашою гільдією, тобі за правильну відповідь дається фаєр-бол💥")
+                case _:
+                    await event.respond("Сталася помилка при обробці надавання призу")
+            
+        
+    else:
+        await event.respond("У нашій гільдії необхідно знати відповіді на такі питання, але ти тільки новачок, тому все ще попереду, а за вступ у гільдію тримай 10 монет 🪙")
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.coins += 10
+
 
 
 

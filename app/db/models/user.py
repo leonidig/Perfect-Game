@@ -14,3 +14,4 @@ class Main(Base):
     have_fight: Mapped[bool] = mapped_column(default=False)
     coins: Mapped[int] = mapped_column(default=0)
     guild: Mapped[str] = mapped_column(default="NOTHING")
+    slot: Mapped[str] = mapped_column(default="")

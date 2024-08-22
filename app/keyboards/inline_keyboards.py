@@ -142,3 +142,16 @@ guild_choice = [
     [button.inline("Легіон Вогняного Молота", b"guild_fighters")],
     [button.inline("Орден Місячного Зілля", b"guild_trackers")],
 ]
+
+
+guild_action_1 = [
+    button.inline("Взаємодіяти з гільдією", b'guild_action_1')
+]
+
+
+third_question = [
+    [button.inline("issubclass", b'q3_false_1')],
+    [button.inline("classof()", b'q3_false_2')],
+    [button.inline("isinstance", b'q3_true')],
+    [button.inline("type()", b'q3_false_1')],
+]
