@@ -155,3 +155,34 @@ third_question = [
     [button.inline("isinstance", b'q3_true')],
     [button.inline("type()", b'q3_false_1')],
 ]
+
+
+enter_3 = [
+    button.inline("Йти далі", b'enter_3')
+]
+
+
+enter_4 = [
+    button.inline("Вперед", b'enter_4')
+]
+
+
+quest_for_npc = [
+    button.inline("Звідки ти про мене стільки знаєш", b'quest_for_npc')
+]
+
+
+enter_5 = [
+    button.inline("Йти далі", b'enter_5')
+]
+
+
+dice_2 = [
+    button.inline("🎲", b'dice_2')
+]
+
+
+fight_3 = [
+    [button.inline("Битися", b'fight_3')],
+    [button.inline("Випити хілку", b'use_heal')]
+]

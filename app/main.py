@@ -18,7 +18,8 @@ from forks.plots import (plots,
                          forest,
                          monsters_plot,
                          guild_choice,
-                         question_
+                         question_,
+                         npc
                          )
 
 from forks.collision import start_collision
@@ -81,9 +82,11 @@ async def handle_message(event):
                     session.add(user)
                 user_heroes[user_id] = selected_hero
                 await event.respond(f"Твій вибір пав на: {selected_hero}\nПодивимось, чи впорається він з усіма складностями.", buttons=inline_keyboards.start_game)
+                del current_user_state[user_id]
             elif selected_hero == "Розпочати Гру!":
                 pass
             else:
+                del current_user_state[user_id]
                 await event.respond("Герой не знайден (")
 
 
@@ -251,9 +254,9 @@ async def user_heal(event):
             user.heal -= 1
             user.hp += 15
             hero.hp += 15
-            await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп", buttons=inline_keyboards.go_1)
+            await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп", buttons=inline_keyboards.go_1)  ##################################################################################################################################################################
 
-traveler_path = ""
+traveler_path = "app/assets/traveler.jpg"
 @client.on(events.CallbackQuery(pattern=b'go_1'))
 async def go_1(event):
     global traveler_path
@@ -524,23 +527,71 @@ async def check_answer_3(event):
             match user.guild:
                 case "Mages":
                     user.slot = "lucky"
-                    await event.respond("Правильно, тримай собі + к удачі, це не буде зайвим")
+                    await event.respond("Правильно, тримай собі + к удачі, це не буде зайвим", buttons=inline_keyboards.enter_3)
                 case "Fighters":
                     user.arrows += 15
-                    await event.respond("Вітаємо,ти не даремно обрав нашу гільдію - тримай 15 стріл➶➶")
+                    await event.respond("Вітаємо,ти не даремно обрав нашу гільдію - тримай 15 стріл➶➶", buttons=inline_keyboards.enter_3)
                 case "Trackers":
                     user.slot += "fireball"
-                    await event.respond("Ключ до успіху з нашою гільдією, тобі за правильну відповідь дається фаєр-бол💥")
+                    await event.respond("Ключ до успіху з нашою гільдією, тобі за правильну відповідь дається фаєр-бол💥", buttons=inline_keyboards.enter_3)
                 case _:
                     await event.respond("Сталася помилка при обробці надавання призу")
             
         
     else:
-        await event.respond("У нашій гільдії необхідно знати відповіді на такі питання, але ти тільки новачок, тому все ще попереду, а за вступ у гільдію тримай 10 монет 🪙")
+        await event.respond("У нашій гільдії необхідно знати відповіді на такі питання, але ти тільки новачок, тому все ще попереду, а за вступ у гільдію тримай 10 монет 🪙", buttons=inline_keyboards.enter_3)
         with Session.begin() as session:
             user = session.scalar(select(Main).where(Main.username == first_name))
             user.coins += 10
 
+
+
+@client.on(events.CallbackQuery(pattern=b'enter_3'))
+async def enter_3(event):
+    await event.respond("Псс, ти вже трішки розвинений в нашому світі, тому тобі відкривається функція перегляду інвентаря твого персонажу\n/dossier")
+
+
+@client.on(events.NewMessage(pattern="/dossier"))
+async def wiew_dossier(event):
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        await event.respond(f"""Статистика юзера: 👤 <b>{user.username}</b>\n
+Герой: {user.hero};
+Хп: {user.hp};
+Хілки: {user.heal};
+Стріли: {user.arrows};
+Монети: {user.coins};
+Гільдія: {user.guild};
+Слот: {user.slot};
+                            """, parse_mode='html', buttons=inline_keyboards.enter_4)
+        
+
+@client.on(events.CallbackQuery(pattern=b'enter_4'))
+async def enter_4(event):
+    location1_path = "app/assets/location1.png"
+    await client.send_file(event.chat_id, location1_path, caption=npc, buttons=inline_keyboards.quest_for_npc)
+
+@client.on(events.CallbackQuery(pattern=b'quest_for_npc'))
+async def quest_for_npc(event):
+    await event.respond("Ми ще не настільки знайомі з тобою, пізніше ти може дізнєшься чого я знаю про тебе стільки всього, а зараз - твоя задача це забрати лук", buttons=inline_keyboards.enter_5)
+
+
+@client.on(events.CallbackQuery(pattern=b'enter_5'))
+async def enter_5(event):
+    forest_path = "app/assets/location2.png"
+    await client.send_file(event.chat_id, forest_path, caption="Ти йдеш по лісу і бачиш багато оленів\nНу шо, кидаємо кості?", buttons=inline_keyboards.dice_2)
+
+
+number = 0
+@client.on(events.CallbackQuery(pattern=b'dice_2'))
+async def dice_2(event):
+    number = random.randint(0, 20)
+    await event.respond(f"Тобі випало число {number}", buttons=inline_keyboards.fight_3)
+
+
+@client.on(events.CallbackQuery(pattern=b'fight_3'))
+async def fight_3(event):
+    await event.respond("ТУТ ПОВИНЕН БУТИ БІЙ !")
 
 
 
