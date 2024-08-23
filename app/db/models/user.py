@@ -15,3 +15,4 @@ class Main(Base):
     coins: Mapped[int] = mapped_column(default=0)
     guild: Mapped[str] = mapped_column(default="NOTHING")
     slot: Mapped[str] = mapped_column(default="")
+    сorrect_answers: Mapped[int] = mapped_column(default=0)

@@ -189,3 +189,69 @@ third_fight = [
 do_hit = [
     button.inline("Удар!", b'do_hit')
 ]
+
+
+walk = [
+    [button.inline("Йти за луком", b'walk_to_bow')],
+    [button.inline("Йти назад", b'back')]
+]
+
+however_walk = [
+    [button.inline("Йти за луком", b'walk_to_bow')]
+]
+
+
+open_test = [
+    button.inline("Пройти тест", b'open_test')
+]
+
+
+question_four = [
+    [button.inline('True', b'q4_true')],
+    [button.inline('False', b'g4_false_1')],
+    [button.inline('None', b'g4_false_2')],
+    [button.inline('Error', b'g4_false_3')],
+]
+
+next_question1 = [
+    [button.inline("Наступне Запитання", b'next_question1')]
+]
+
+question_five = [
+    [button.inline("dict_values([3, 4, 5, 6])", b"q5_false_1")],
+    [button.inline("dict_values([2, 3, 4, 5])", b"q5_true")],
+    [button.inline("KeyError", b"q5_false_2")],
+    [button.inline("dict_values([0, 1, 2, 3, 4])", b"q5_false_3")]
+]
+
+next_question2 = [
+    [button.inline("Наступне Запитання", b'next_question2')]
+]
+
+
+question_six = [
+    [button.inline("97, 98, 99, 100, 101", b"q6_false_1")],
+    [button.inline("97, 98, 99, 100, 101, 102", b"q6_false_2")],
+    [button.inline("abcde", b"q6_true")],
+    [button.inline("['a', 'b', 'c', 'd', 'e']", b"q6_false_3")]
+]
+
+
+
+run = [
+    button.inline("Йти далі 🚪 🔑", b'run')
+]
+
+run1 = [
+    button.inline("Зайти в ворота", b'open_door')
+]
+
+
+get_bow = [
+    button.inline("ЗАБРАТИ", b'get_bow')
+]
+
+
+go_home = [
+    button.inline("Йти до бази гільдії 🏯", b'go_home')
+]

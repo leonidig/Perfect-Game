@@ -19,7 +19,8 @@ from forks.plots import (plots,
                          monsters_plot,
                          guild_choice,
                          question_,
-                         npc
+                         npc,
+                         test_bow
                          )
 
 from forks.collision import start_collision
@@ -468,8 +469,8 @@ async def check_answer_2(event):
     correct_answer = b'q2_true'
     global first_name
     sender = await event.get_sender()
+    user_id = event.sender_id
     first_name = sender.first_name
-
     if event.data == correct_answer:
         with Session.begin() as session:
             user = session.scalar(select(Main).where(Main.username == first_name))
@@ -525,8 +526,6 @@ async def guild_action_1(event):
 async def check_answer_3(event):
     correct_answer = b'q3_true'
     global first_name
-    sender = await event.get_sender()
-    first_name = sender.first_name
 
     if event.data == correct_answer:
         with Session.begin() as session:
@@ -610,6 +609,11 @@ async def fight_3(event):
 
 @client.on(events.CallbackQuery(pattern=b'do_hit'))
 async def do_hit(event):
+    monsters = [
+                    Monster("Reindeer1", 25, 5),
+                    Monster("Reindeer2", 25, 5),
+                    Monster("Reindeer3", 25, 5)
+                ]
     user_id = event.sender_id
     number = number_generated.get(user_id)
     if number is None:
@@ -620,6 +624,7 @@ async def do_hit(event):
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
 
+
         if user.slot == "fireball":
             if user_options[user_id] is None:
                 remaining_hp = hp_dict.get(user_id, monster_hp) - 25
@@ -627,17 +632,9 @@ async def do_hit(event):
                 user.slot = ""
                 user_options[user_id] = "fireball"
                 await event.respond("В тебе є файр-бол, він летить у оленів\nОленів становиться на одного меньше\nВже 3 оленя!\nУ оленів 85хп")
-                monsters_ = [
-                    Monster("Reindeer1", 25, 5),
-                    Monster("Reindeer2", 25, 5),
-                    Monster("Reindeer3", 25, 5)
-                ]
+                
             else:
-                monsters_ = [
-                    Monster("Reindeer1", 25, 5),
-                    Monster("Reindeer2", 25, 5),
-                    Monster("Reindeer3", 25, 5)
-                ]
+                monsters_ = monsters
         
         elif user.slot == "lucky":
             if user_options[user_id] is None:
@@ -660,17 +657,9 @@ async def do_hit(event):
                 user.arrows -= 15
                 user_options[user_id] = "arrows" 
                 await event.respond("Ти як справжній міщанин затикав копʼєм оленя і тепер оленів на одного меньше\nХп оленів: 85")
-                monsters_ = [
-                    Monster("Reindeer1", 25, 5),
-                    Monster("Reindeer2", 25, 5),
-                    Monster("Reindeer3", 25, 5)
-                ]
+                monsters_ = monsters
             else:
-                monsters_ = [
-                    Monster("Reindeer1", 25, 5),
-                    Monster("Reindeer2", 25, 5),
-                    Monster("Reindeer3", 25, 5)
-                ]
+                monsters_ = monsters
 
         hp_dict[user_id] = hp_dict.get(user_id, monster_hp)
 
@@ -687,7 +676,7 @@ async def do_hit(event):
             if hp_dict[user_id] <= 0:
                 user.hp += 25
                 user.coins += 10
-                await event.edit(f'Ти люто нагнув оленів во всіх формах цього слова\nЗ них випало 10 монет і тобі +25 хп\nТепер в тебе {user.hp}')
+                await event.edit(f'Ти люто нагнув оленів во всіх формах цього слова\nЗ них випало 10 монет і тобі +25 хп\nТепер в тебе {user.hp}', buttons=inline_keyboards.walk)
                 number_generated.pop(user_id, None)
                 return
             
@@ -698,6 +687,96 @@ async def do_hit(event):
                 return
             
             await event.edit(f"- Ти задав {damage_dealt} урону\nУ оленів {hp_dict.get(user_id)}\n- Олень задав тобі {monster_damage} урону\nУ тебе {user.hp}", buttons=inline_keyboards.do_hit)
+
+
+@client.on(events.CallbackQuery(pattern=b'back'))
+async def go_back(event):
+    back_choice_path = "app/assets/back_choice.png"
+    await client.send_file(event.chat_id, back_choice_path, caption="Бачиш, він теж обирає зад, тільки не в плані подорожей\nВже немає дороги назад)", buttons=inline_keyboards.however_walk)
+
+
+@client.on(events.CallbackQuery(pattern=b'walk_to_bow'))
+async def walk_to_bow(event):
+    сlosed_gates_path = "app/assets/closed_gates.png"
+    await client.send_file(event.chat_id, сlosed_gates_path, caption="Лук зараз закритий,треба відповісти на 3 запитання", buttons=inline_keyboards.open_test)
+
+
+@client.on(events.CallbackQuery(pattern=b'open_test'))
+async def open_test(event):
+    await event.respond("Перше питання!\n Який результат виконання виразу any([i > 2 for i in [1, 2, 3]])?", buttons=inline_keyboards.question_four)
+    
+@client.on(events.CallbackQuery(pattern=b'q4_.*'))
+async def check_answer_4(event):
+    correct_answer = b'q4_true'
+
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.сorrect_answers += 1
+        await event.respond("В тебе тепер 1 правильна відповідь", buttons=inline_keyboards.next_question1)
+    else:
+        await event.respond("Спробуй ще раз")
+
+
+@client.on(events.CallbackQuery(pattern=b'next_question1'))
+async def send_question_1(event):
+    await event.respond("""Що поверне цей код\na = {i: i+2 for i in range(4)}.values()\n
+print(a)
+""", buttons=inline_keyboards.question_five)
+    
+
+@client.on(events.CallbackQuery(pattern=b'q5_.*'))
+async def check_answer_5(event):
+    correct_answer = b'q5_true'
+
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.сorrect_answers += 1
+        await event.respond("Правильно!", buttons=inline_keyboards.next_question2)
+    else:
+        await event.respond("Спробуй ще раз")
+
+
+@client.on(events.CallbackQuery(pattern=b'next_question2'))
+async def send_auestion_2(event):
+    await event.respond("Фінальне запитання\nЩо поверне программа\n''.join([chr(i) for i in range(97, 102)])",buttons=inline_keyboards.question_six)
+
+
+@client.on(events.CallbackQuery(pattern=b'q6_.*'))
+async def check_answer_6(event):
+    correct_answer = b'q6_true'
+
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.сorrect_answers += 1
+        await event.respond("Правильно!", buttons=inline_keyboards.run)
+    else:
+        await event.respond("Спробуй ще раз")
+
+
+@client.on(events.CallbackQuery(pattern=b'run'))
+async def run(event):
+    open_gates_path = "app/assets/open_gates.gif"
+    await client.send_file(event.chat_id, open_gates_path, caption="Двері відчиняються...))", buttons=inline_keyboards.run1)
+
+
+@client.on(events.CallbackQuery(pattern=b'open_door'))
+async def place_bow(event):
+    bow_location_path = "app/assets/bow.jpg"
+    await client.send_file(event.chat_id, bow_location_path, caption="І ОСЬ ВІН ПЕРЕД ТОБОЮ БЕРИ ЙОГО ", buttons=inline_keyboards.get_bow)
+
+
+@client.on(events.CallbackQuery(pattern=b'get_bow'))
+async def get_bow(event):
+    await event.respond("Поздравляємо від лиця автора і всіх нпс з твоєю новою зброєю, тепер будеш виносити опрнентів з дистанції", buttons=inline_keyboards.go_home)
+
+
+@client.on(events.CallbackQuery(pattern=b'go_home'))
+async def road_to_home(event):
+    bat_path = "app/assets/bat.gif"
+    await client.send_file(event.chat_id, bat_path, caption=test_bow)
 
 
 
