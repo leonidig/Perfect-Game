@@ -20,7 +20,8 @@ from forks.plots import (plots,
                          guild_choice,
                          question_,
                          npc,
-                         test_bow
+                         test_bow,
+                         road_to_enchanter
                          )
 
 from forks.collision import start_collision
@@ -770,13 +771,90 @@ async def place_bow(event):
 
 @client.on(events.CallbackQuery(pattern=b'get_bow'))
 async def get_bow(event):
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        user.weapon = "bow"
     await event.respond("Поздравляємо від лиця автора і всіх нпс з твоєю новою зброєю, тепер будеш виносити опрнентів з дистанції", buttons=inline_keyboards.go_home)
 
 
 @client.on(events.CallbackQuery(pattern=b'go_home'))
 async def road_to_home(event):
     bat_path = "app/assets/bat.gif"
-    await client.send_file(event.chat_id, bat_path, caption=test_bow)
+    await client.send_file(event.chat_id, bat_path, caption=test_bow, buttons=inline_keyboards.kill_bat)
+
+
+@client.on(events.CallbackQuery(pattern=b'kill_bat'))
+async def kill_bat(event):
+    number = random.randint(1, 2)
+    if number == 1 or number == 2:
+        await event.respond("Ти непогано впрорався з луком,тобі випав огонь, по приходу додому - розкажу як ти можеш його використати, гарний початок", buttons=inline_keyboards.comeback_to_guild)
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.slot = "fire"
+    else:
+        await event.respond("Ти промазав, спугнув мишу та вона улетіла, нічого, це перша спроба", buttons=inline_keyboards.comeback_to_guild)
+
+
+@client.on(events.CallbackQuery(pattern=b'comeback_to_guild'))
+async def comeback_to_guild(event):
+    guild_place_path = "app/assets/location1.png"
+    await client.send_file(event.chat_id, guild_place_path, caption=road_to_enchanter, buttons=inline_keyboards.thx)
+        
+
+@client.on(events.CallbackQuery(pattern=b'thx'))
+async def thx(event):
+    guard_location_path = "app/assets/ZAGLUSHKA.png"
+    await client.send_file(event.chat_id, guard_location_path, caption="Охоронець: Слухай, я тебе тут не бачив ще", buttons=inline_keyboards.for_guard)
+
+
+@client.on(events.CallbackQuery(pattern=b'for_guard'))
+async def for_guard(event):
+    await event.respond("Відповідь на моє запитання і йди до чарівника\nЯкий результат виконання виразу {i: i**3 for i in range(3)}[2]?", buttons=inline_keyboards.aisle_question)
+
+
+@client.on(events.CallbackQuery(pattern=b'q7_.*'))
+async def check_answer_6(event):
+    correct_answer = b'q7_true'
+
+    if event.data == correct_answer:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            user.сorrect_answers += 1
+        await event.respond("Проходь!)", buttons=inline_keyboards.meet_enchanter)
+    else:
+        await event.respond("Нажаль не можу тебе пропустити")
+
+
+@client.on(events.CallbackQuery(pattern=b'meet_enchanter'))
+async def meet_enchanter(event):
+    await event.respond("Ох, привіт!Я чув шо в тебе є лук\nТи ж прийшов його зачарувати в мене, для цього потрібно або дати мені огонь який ти можеш здобути з вбивства кажана, або купити в мене за 10 монет\nЯкий варіант більше подобається?", buttons=inline_keyboards.enchanter_choice)
+
+
+@client.on(events.CallbackQuery(pattern=b'have_fire'))
+async def have_fire(event):
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        if user.slot != "fire":
+            await event.respond("В тебе намає огня, тому тобі треба його купити", buttons=inline_keyboards.buy)
+        else:
+            user.slot = ""
+            user.weapon = "fire-bow"
+            await event.respond("Тримай сві оновлений лук - вогнений лук!", buttons=inline_keyboards.return_to_base)
+
+
+@client.on(events.CallbackQuery(pattern=b'buy'))
+async def buy(event):
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        if user.coins < 10:
+            await event.respond("В темає стільки монет")
+        else:
+            user.coins -= 10
+            await event.respond("Окей, гарна угода!", buttons=inline_keyboards.return_to_base)
+
+@client.on(events.CallbackQuery(pattern=b'return_to_base'))
+async def return_to_base(event):
+    await event.respond("Як же тут гарно вночі!")
 
 
 

@@ -255,3 +255,51 @@ get_bow = [
 go_home = [
     button.inline("Йти до бази гільдії 🏯", b'go_home')
 ]
+
+kill_bat = [
+    button.inline("Стрільнути", b'kill_bat')
+]
+
+
+comeback_to_guild = [
+    button.inline("Вперед", b'comeback_to_guild')
+]
+
+
+thx = [
+    button.inline("Дякую", b'thx')
+]
+
+
+for_guard = [
+    button.inline("Що мені зробити?", b'for_guard')
+]
+
+
+aisle_question = [
+    [button.inline("2", b'q7_false_1')],
+    [button.inline("6", b'q7_false_2')],
+    [button.inline("8", b'q7_true')],
+    [button.inline("KeyError", b'q7_false_3')]
+
+]
+
+
+meet_enchanter = [
+    button.inline("Пройти до зачарувальника", b'meet_enchanter')
+]
+
+
+enchanter_choice = [
+    [button.inline("Купити", b'buy')],
+    [button.inline("В мене є", b'have_fire')]
+]
+
+buy = [
+    [button.inline("Купити", b'buy')]
+]
+
+
+return_to_base = [
+    button.inline("Йти на базу", b'return_to_base')
+]
