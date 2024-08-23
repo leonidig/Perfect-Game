@@ -144,8 +144,8 @@ guild_choice = [
 ]
 
 
-guild_action_1 = [
-    button.inline("Взаємодіяти з гільдією", b'guild_action_1')
+action_guild_1 = [
+    button.inline("Взаємодіяти з гільдією", b'action_guild_1')
 ]
 
 
@@ -177,12 +177,15 @@ enter_5 = [
 ]
 
 
-dice_2 = [
-    button.inline("🎲", b'dice_2')
+heal_before_fight = [
+    [button.inline("Випити хілку", b'use_heal')]
+]
+
+third_fight = [
+    [button.inline("Битися", b'fight_3')]
 ]
 
 
-fight_3 = [
-    [button.inline("Битися", b'fight_3')],
-    [button.inline("Випити хілку", b'use_heal')]
+do_hit = [
+    button.inline("Удар!", b'do_hit')
 ]

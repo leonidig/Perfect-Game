@@ -376,24 +376,45 @@ async def next_8(event):
     await event.respond("Приготуйся до атаки!", buttons=inline_keyboards.final_attack_2)
 
 
+def calculate_damage(hero: object, selected_damage: int):
+    if 17 <= selected_damage <= 22:
+        return hero.damage + random.randint(8, 10)
+    elif 12 <= selected_damage <= 16:
+        return hero.damage + random.randint(4, 7)
+    elif 7 <= selected_damage <= 11:
+        return hero.damage + random.randint(3, 5)
+    elif 3 <= selected_damage <= 6:
+        return hero.damage + 3
+    elif 1 <= selected_damage <= 2:
+        return hero.damage + 1
+    elif selected_damage == 0:
+        return hero.damage - 3
+    else:
+        return hero.damage
+
+
+def calculate_monster_damage(monsters_, monster_damage_choice: int):
+    start_total = sum(monster.damage for monster in monsters_)
+    
+    if monster_damage_choice <= 3:
+        return start_total
+    elif 4 <= monster_damage_choice <= 7:
+        return start_total + random.randint(1, 2)
+    elif 8 <= monster_damage_choice <= 10:
+        return start_total + random.randint(2, 4)
+    else:
+        return monster_damage_choice
+
+
 @client.on(events.CallbackQuery(pattern=b'do_attack'))
 async def do_attack(event):
     sender = await event.get_sender()
     first_name = sender.first_name
     
     monsters_ = [Monster("Gimno", 55, 5), Monster("Ben", 65, 7)]
-    start_total = sum(monster.damage for monster in monsters_)
-    
     global monster_damage_choice
-    
-    if monster_damage_choice <= 3:
-        monster_damage = start_total
-    elif 4 <= monster_damage_choice <= 7:
-        monster_damage = start_total + random.randint(1, 2)
-    elif 8 <= monster_damage_choice <= 10:
-        monster_damage = start_total + random.randint(2, 4)
-    else:
-        monster_damage = monster_damage_choice
+
+    monster_damage = calculate_monster_damage(monsters_, monster_damage_choice)
     
     user_id = event.sender_id
     hero_name = user_heroes.get(user_id)
@@ -401,22 +422,7 @@ async def do_attack(event):
     selected_damage = random.randint(0, 20)
 
     if hero:
-        if 17 <= selected_damage <= 20:
-            damage_dealt = hero.damage + random.randint(8, 10)
-        elif 12 <= selected_damage <= 16:
-            damage_dealt = hero.damage + random.randint(4, 7)
-        elif 7 <= selected_damage <= 11:
-            damage_dealt = hero.damage + random.randint(3, 5)
-        elif 3 <= selected_damage <= 6:
-            damage_dealt = hero.damage + 3
-        elif 1 <= selected_damage <= 2:
-            damage_dealt = hero.damage + 1
-        elif selected_damage == 0:
-            damage_dealt = hero.damage - 3
-        else:
-            damage_dealt = hero.damage
-   
-
+        damage_dealt = calculate_damage(hero, selected_damage)
 
         monster_hp_dict[user_id] -= damage_dealt
 
@@ -448,6 +454,7 @@ async def do_attack(event):
         )
     else:
         await event.respond("Проблеми з даними о героях або монстрах.")
+
 
 
 @client.on(events.CallbackQuery(pattern=b'road_to_bow'))
@@ -503,10 +510,10 @@ async def save_user_guild(event):
             return
         
         session.add(user)
-        await event.respond(f"Обрана гільдія: {user.guild}", buttons=inline_keyboards.guild_action_1)
+        await event.respond(f"Обрана гільдія: {user.guild}", buttons=inline_keyboards.action_guild_1)
 
 
-@client.on(events.CallbackQuery(pattern=b'guild_action_1'))
+@client.on(events.CallbackQuery(pattern=b'action_guild_1'))
 async def guild_action_1(event):
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
@@ -579,19 +586,118 @@ async def quest_for_npc(event):
 @client.on(events.CallbackQuery(pattern=b'enter_5'))
 async def enter_5(event):
     forest_path = "app/assets/location2.png"
-    await client.send_file(event.chat_id, forest_path, caption="Ти йдеш по лісу і бачиш багато оленів\nНу шо, кидаємо кості?", buttons=inline_keyboards.dice_2)
+    await client.send_file(event.chat_id, forest_path, caption="Ти йдеш по лісу і бачиш багато оленів\nНу шо, кидаємо кості?", buttons=inline_keyboards.third_fight)
 
 
-number = 0
-@client.on(events.CallbackQuery(pattern=b'dice_2'))
-async def dice_2(event):
-    number = random.randint(0, 20)
-    await event.respond(f"Тобі випало число {number}", buttons=inline_keyboards.fight_3)
 
+hp_dict = dict()
+number_generated = {}
+user_options = {}
 
 @client.on(events.CallbackQuery(pattern=b'fight_3'))
 async def fight_3(event):
-    await event.respond("ТУТ ПОВИНЕН БУТИ БІЙ !")
+    user_id = event.sender_id
+    
+    if user_id in number_generated:
+        await event.respond("Ви вже отримали число!")
+        return
+
+    number = random.randint(0, 20)
+    number_generated[user_id] = number
+    user_options[user_id] = None
+    await event.respond(f"Тобі випало число {number}", buttons=inline_keyboards.do_hit)
+
+
+@client.on(events.CallbackQuery(pattern=b'do_hit'))
+async def do_hit(event):
+    user_id = event.sender_id
+    number = number_generated.get(user_id)
+    if number is None:
+        await event.respond("Спочатку потрібно отримати число!")
+        return
+
+    monster_hp = 100
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+
+        if user.slot == "fireball":
+            if user_options[user_id] is None:
+                remaining_hp = hp_dict.get(user_id, monster_hp) - 25
+                hp_dict[user_id] = remaining_hp
+                user.slot = ""
+                user_options[user_id] = "fireball"
+                await event.respond("В тебе є файр-бол, він летить у оленів\nОленів становиться на одного меньше\nВже 3 оленя!\nУ оленів 85хп")
+                monsters_ = [
+                    Monster("Reindeer1", 25, 5),
+                    Monster("Reindeer2", 25, 5),
+                    Monster("Reindeer3", 25, 5)
+                ]
+            else:
+                monsters_ = [
+                    Monster("Reindeer1", 25, 5),
+                    Monster("Reindeer2", 25, 5),
+                    Monster("Reindeer3", 25, 5)
+                ]
+        
+        elif user.slot == "lucky":
+            if user_options[user_id] is None:
+                number += 2
+                user.slot = ""
+                user_options[user_id] = "lucky"
+                await event.respond(f"В тебе в інвентарі є удача, к твому рандому числу + 2\nВипадкове число тепер дорівнює = {number}")
+                monsters_ = [
+                    Monster("Reindeer1", 25, 5),
+                    Monster("Reindeer2", 25, 5),
+                    Monster("Reindeer3", 25, 5),
+                    Monster("Reindeer4", 25, 5)
+                ]
+
+        
+        elif user.arrows >= 15:
+            if user_options[user_id] is None:
+                remaining_hp = hp_dict.get(user_id, monster_hp) - 25
+                hp_dict[user_id] = remaining_hp
+                user.arrows -= 15
+                user_options[user_id] = "arrows" 
+                await event.respond("Ти як справжній міщанин затикав копʼєм оленя і тепер оленів на одного меньше\nХп оленів: 85")
+                monsters_ = [
+                    Monster("Reindeer1", 25, 5),
+                    Monster("Reindeer2", 25, 5),
+                    Monster("Reindeer3", 25, 5)
+                ]
+            else:
+                monsters_ = [
+                    Monster("Reindeer1", 25, 5),
+                    Monster("Reindeer2", 25, 5),
+                    Monster("Reindeer3", 25, 5)
+                ]
+
+        hp_dict[user_id] = hp_dict.get(user_id, monster_hp)
+
+        monster_damage_choice = number
+        monster_damage = calculate_monster_damage(monsters_, monster_damage_choice)
+
+        hero_name = user_heroes.get(user_id)
+        hero = heroes.get(hero_name)
+
+        if hero:
+            damage_dealt = calculate_damage(hero, selected_damage=number)
+
+            hp_dict[user_id] -= damage_dealt
+            if hp_dict[user_id] <= 0:
+                user.hp += 25
+                user.coins += 10
+                await event.edit(f'Ти люто нагнув оленів во всіх формах цього слова\nЗ них випало 10 монет і тобі +25 хп\nТепер в тебе {user.hp}')
+                number_generated.pop(user_id, None)
+                return
+            
+            hero.hp -= monster_damage
+            user.hp -= monster_damage
+            if user.hp <= 0:
+                await event.edit("Ти з позором впав перед оленямі ахахахаха")
+                return
+            
+            await event.edit(f"- Ти задав {damage_dealt} урону\nУ оленів {hp_dict.get(user_id)}\n- Олень задав тобі {monster_damage} урону\nУ тебе {user.hp}", buttons=inline_keyboards.do_hit)
 
 
 
