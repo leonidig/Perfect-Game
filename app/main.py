@@ -33,6 +33,10 @@ api_id = getenv("api_id")
 api_hash = getenv('api_hash')
 bot_token = getenv("bot_token")
 
+print(api_hash)
+print(api_id)
+print(bot_token)
+
 client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
 
 heroes = {
