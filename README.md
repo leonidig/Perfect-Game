@@ -16,3 +16,6 @@ Python ;
 - command < pip install -r requirements.txt >
 
 I promise that if I win, I will support the project 
+
+# BOT
+- @Dark1LegacyBot
