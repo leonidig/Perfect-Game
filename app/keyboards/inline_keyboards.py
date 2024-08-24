@@ -349,3 +349,8 @@ walk_in_forest = [
 second_hit = [
     button.inline("Стріляю!", b'second_hit')
 ]
+
+
+give_coins = [
+    button.inline("Далі", b'give_coins')
+]

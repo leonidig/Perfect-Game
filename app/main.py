@@ -1011,22 +1011,35 @@ def hero_damage():
 
 @client.on(events.CallbackQuery(pattern=b'second_hit'))
 async def second_hit(event):
-    
+
     global died_boars
     damage = hero_damage()
-    boar_hp = 110
-    boar_damage = random.randint(10, 20)
+    boar_damage = random.randint(5, 15)
+
+    if 'boar_hp' not in globals():
+        global boar_hp
+        boar_hp = 110
+
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
         user.hp -= boar_damage
-        while user.hp > 0 and boar_hp > 0:
+        if user.hp > 0 and boar_hp > 0:
             boar_hp -= damage
-            await event.edit(f"Ти надав монстру {damage} урону - тепер в нього {boar_hp}\nВін задав тобі {boar_damage} урону, в тебе {user.hp}хп",buttons=inline_keyboards.second_hit)
+            await event.edit(f"Ти надав монстру {damage} урону - тепер в нього {boar_hp}\nВін задав тобі {boar_damage} урону, в тебе {user.hp}хп", buttons=inline_keyboards.second_hit)
     
-        if user.hp <= 0:
+        elif user.hp <= 0:
             await event.respond("Тебе вбив кабан")
         elif boar_hp <= 0:
-            await event.respond("Ти вбив кабана")
+            await event.respond("Ти вбив кабана", buttons=inline_keyboards.give_coins)
+
+@client.on(events.CallbackQuery(pattern=b'give_coins'))
+async def give_coins(event):
+    await event.respond("Тримай 35 монет за те що допоміг мені")
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        user.coins += 35
+        await event.respond("Розробник встиг все що зміг зробити за тиждень, та у випадку перемоги обіцяє підтриати свій продукт")
+
         
 
     
