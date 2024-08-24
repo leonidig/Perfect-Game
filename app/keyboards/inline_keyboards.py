@@ -303,3 +303,16 @@ buy = [
 return_to_base = [
     button.inline("Йти на базу", b'return_to_base')
 ]
+
+
+visit_shop = [
+    button.inline("Гуляти по базі", b'visit_shop')
+]
+
+shop_kb = [
+    [button.inline("Королівська запіканка (12 коп + 10 хп)", b'shop_zapikanka')],
+    [button.inline("Каша бідняка з медом (5 коп + 4 хп)", b'shop_kasha')],
+    [button.inline("Гарячий хліб з часниковим маслом (8 коп + 9 хп)", b'shop_hleb')],
+    [button.inline("Крем-суп з гарбуза та моркви (15 коп + 14 хп)", b'shop_soup')],
+    [button.inline("Запечена свинина з лісовими грибами (22 коп + 17 хп)", b'shop_svinina')],
+]

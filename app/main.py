@@ -21,7 +21,8 @@ from forks.plots import (plots,
                          question_,
                          npc,
                          test_bow,
-                         road_to_enchanter
+                         road_to_enchanter,
+                         view_shop
                          )
 
 from forks.collision import start_collision
@@ -248,15 +249,27 @@ async def user_heal(event):
     sender = await event.get_sender()
     global hero
     first_name = sender.first_name
-    with Session.begin() as session:
-        user = session.scalar(select(Main).where(Main.username == first_name))
-        if user.heal <= 0:
-            await event.respond("В тебе недостаньо хілок")
-        else:
+    try:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            
+            if user is None:
+                await event.respond("Користувача не знайдено.")
+                return
+            
+            if user.heal <= 0:
+                await event.respond("В тебе недостатньо хілок.")
+                return
             user.heal -= 1
             user.hp += 15
             hero.hp += 15
-            await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп", buttons=inline_keyboards.go_1)  ##################################################################################################################################################################
+            await event.edit(f"Ти використав 1 хілку, тепер в тебе їх {user.heal} шт.\nТа {hero.hp} хп")
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        await event.respond("Сталася помилка при обробці вашого запиту. Спробуйте ще раз пізніше.")
+
+
 
 traveler_path = "app/assets/traveler.jpg"
 @client.on(events.CallbackQuery(pattern=b'go_1'))
@@ -491,28 +504,35 @@ async def enter_2(event):
 @client.on(events.CallbackQuery(pattern=b'guild_.*'))
 async def save_user_guild(event):
     global first_name
-    with Session.begin() as session:
-        user = session.scalar(select(Main).where(Main.username == first_name))
-        if user is None:
-            await event.respond("Користувача не знайдено.")
-            return
-        elif user.guild == "NOTHING":
-            match event.data:
-                case b'guild_mages':
-                    user.guild = "Mages"
-                case b'guild_fighters':
-                    user.guild = "Fighters"
-                case b'guild_trackers':
-                    user.guild = "Trackers"
-                case _:
-                    await event.respond("Помилка при виборі гільдії")
-                    return 
-        else:
-            await event.respond("Неможна переобрати гільдію")
-            return
-        
-        session.add(user)
-        await event.respond(f"Обрана гільдія: {user.guild}", buttons=inline_keyboards.action_guild_1)
+    
+    try:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            if user is None:
+                await event.respond("Користувача не знайдено.")
+                return
+            
+            if user.guild == "NOTHING":
+                match event.data:
+                    case b'guild_mages':
+                        user.guild = "Mages"
+                    case b'guild_fighters':
+                        user.guild = "Fighters"
+                    case b'guild_trackers':
+                        user.guild = "Trackers"
+                    case _:
+                        await event.respond("Помилка при виборі гільдії")
+                        return
+            else:
+                await event.respond("Неможна переобрати гільдію")
+                return
+            
+            session.add(user)
+            await event.respond(f"Обрана гільдія: {user.guild}", buttons=inline_keyboards.action_guild_1)
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        await event.respond("Сталася помилка при обробці вашого запиту. Спробуйте ще раз пізніше.")
 
 
 @client.on(events.CallbackQuery(pattern=b'action_guild_1'))
@@ -528,34 +548,45 @@ async def check_answer_3(event):
     correct_answer = b'q3_true'
     global first_name
 
-    if event.data == correct_answer:
-        with Session.begin() as session:
-            user = session.scalar(select(Main).where(Main.username == first_name))
-            match user.guild:
-                case "Mages":
-                    user.slot = "lucky"
-                    await event.respond("Правильно, тримай собі + к удачі, це не буде зайвим", buttons=inline_keyboards.enter_3)
-                case "Fighters":
-                    user.arrows += 15
-                    await event.respond("Вітаємо,ти не даремно обрав нашу гільдію - тримай 15 стріл➶➶", buttons=inline_keyboards.enter_3)
-                case "Trackers":
-                    user.slot += "fireball"
-                    await event.respond("Ключ до успіху з нашою гільдією, тобі за правильну відповідь дається фаєр-бол💥", buttons=inline_keyboards.enter_3)
-                case _:
-                    await event.respond("Сталася помилка при обробці надавання призу")
-            
-        
-    else:
-        await event.respond("У нашій гільдії необхідно знати відповіді на такі питання, але ти тільки новачок, тому все ще попереду, а за вступ у гільдію тримай 10 монет 🪙", buttons=inline_keyboards.enter_3)
-        with Session.begin() as session:
-            user = session.scalar(select(Main).where(Main.username == first_name))
-            user.coins += 10
+    try:
+        if event.data == correct_answer:
+            with Session.begin() as session:
+                user = session.scalar(select(Main).where(Main.username == first_name))
+                if user is None:
+                    await event.respond("Користувача не знайдено")
+                    return
+
+                match user.guild:
+                    case "Mages":
+                        user.slot = "lucky"
+                        await event.respond("Правильно, тримай собі + к удачі, це не буде зайвим", buttons=inline_keyboards.enter_3)
+                    case "Fighters":
+                        user.arrows += 15
+                        await event.respond("Вітаємо, ти не даремно обрав нашу гільдію - тримай 15 стріл➶➶", buttons=inline_keyboards.enter_3)
+                    case "Trackers":
+                        user.slot += "fireball"
+                        await event.respond("Ключ до успіху з нашою гільдією, тобі за правильну відповідь дається фаєр-бол💥", buttons=inline_keyboards.enter_3)
+                    case _:
+                        await event.respond("Сталася помилка при обробці надавання призу")
+
+        else:
+            await event.respond("У нашій гільдії необхідно знати відповіді на такі питання, але ти тільки новачок, тому все ще попереду, а за вступ у гільдію тримай 10 монет 🪙", buttons=inline_keyboards.enter_3)
+            with Session.begin() as session:
+                user = session.scalar(select(Main).where(Main.username == first_name))
+                if user is None:
+                    await event.respond("Користувача не знайдено")
+                    return
+                user.coins += 10
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        await event.respond("Сталася помилка при обробці вашого запиту. Спробуйте ще раз пізніше.")
+
 
 
 
 @client.on(events.CallbackQuery(pattern=b'enter_3'))
 async def enter_3(event):
-    await event.respond("Псс, ти вже трішки розвинений в нашому світі, тому тобі відкривається функція перегляду інвентаря твого персонажу\n/dossier")
+    await event.respond("Псс, ти вже трішки розвинений в нашому світі, тому тобі відкривається функція перегляду інвентаря твого персонажу\n/dossier\nПотім можеш йти далі", buttons=inline_keyboards.enter_4)
 
 
 @client.on(events.NewMessage(pattern="/dossier"))
@@ -563,14 +594,14 @@ async def wiew_dossier(event):
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
         await event.respond(f"""Статистика юзера: 👤 <b>{user.username}</b>\n
-Герой: {user.hero};
-Хп: {user.hp};
-Хілки: {user.heal};
-Стріли: {user.arrows};
-Монети: {user.coins};
-Гільдія: {user.guild};
-Слот: {user.slot};
-                            """, parse_mode='html', buttons=inline_keyboards.enter_4)
+Герой: {user.hero} 🦸
+Хп: {user.hp} ♥️
+Хілки: {user.heal} 🧪
+Стріли: {user.arrows} ➶➶
+Монети: {user.coins} 🪙
+Гільдія: {user.guild} 🔱
+Слот: {user.slot} 🧩
+                            """, parse_mode='html')
         
 
 @client.on(events.CallbackQuery(pattern=b'enter_4'))
@@ -832,32 +863,106 @@ async def meet_enchanter(event):
 
 @client.on(events.CallbackQuery(pattern=b'have_fire'))
 async def have_fire(event):
-    with Session.begin() as session:
-        user = session.scalar(select(Main).where(Main.username == first_name))
-        if user.slot != "fire":
-            await event.respond("В тебе намає огня, тому тобі треба його купити", buttons=inline_keyboards.buy)
-        else:
-            user.slot = ""
-            user.weapon = "fire-bow"
-            await event.respond("Тримай сві оновлений лук - вогнений лук!", buttons=inline_keyboards.return_to_base)
+    try:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            if user is None:
+                await event.respond("Користувача не знайдено")
+                return
+
+            if user.slot != "fire":
+                await event.respond("В тебе немає огня, тому тобі треба його купити", buttons=inline_keyboards.buy)
+            else:
+                user.slot = ""
+                user.weapon = "fire-bow"
+                await event.respond("Тримай свій оновлений лук - вогнений лук!", buttons=inline_keyboards.return_to_base)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        await event.respond("Сталася помилка при обробці вашого запиту. Спробуйте ще раз пізніше.")
+
 
 
 @client.on(events.CallbackQuery(pattern=b'buy'))
 async def buy(event):
-    with Session.begin() as session:
-        user = session.scalar(select(Main).where(Main.username == first_name))
-        if user.coins < 10:
-            await event.respond("В темає стільки монет")
-        else:
-            user.coins -= 10
-            await event.respond("Окей, гарна угода!", buttons=inline_keyboards.return_to_base)
+    try:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            if user is None:
+                await event.respond("Користувача не знайдено")
+                return
+
+            if user.coins < 10:
+                await event.respond("Ви маєте недостатньо монет")
+            else:
+                user.coins -= 10
+                await event.respond("Окей, гарна угода!", buttons=inline_keyboards.return_to_base)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        await event.respond("Сталася помилка при обробці вашого запиту. Спробуйте ще раз пізніше.")
+
+
 
 @client.on(events.CallbackQuery(pattern=b'return_to_base'))
 async def return_to_base(event):
-    await event.respond("Як же тут гарно вночі!")
+    await event.respond("Як же тут гарно вночі!", buttons=inline_keyboards.visit_shop)
+
+
+@client.on(events.CallbackQuery(pattern=b'visit_shop'))
+async def visit_shop(event):
+    await event.respond(view_shop)
+
+
+@client.on(events.NewMessage(pattern='/shop'))
+async def shop(event):
+    shop_path = "app/assets/shop.png"
+    await client.send_file(event.chat_id, shop_path, caption="Заходь до магазину\nТрапеза:", buttons=inline_keyboards.shop_kb)
+    await event.respond("Або йти далі")
+
+
+PRODUCTS = {
+    b'shop_zapikanka': (12, 10),
+    b'shop_kasha': (5, 4),
+    b'shop_hleb': (8, 9),
+    b'shop_soup': (15, 15),
+    b'shop_svinina': (22, 17)
+}
+
+
+@client.on(events.CallbackQuery(pattern=b'shop_.*'))
+async def buy_product(event):
+    product = PRODUCTS.get(event.data)
+    if product is None:
+        await event.respond("Сталася помилка")
+        return
+    cost, hp_increase = product
+    
+    try:
+        with Session.begin() as session:
+            user = session.scalar(select(Main).where(Main.username == first_name))
+            if user is None:
+                await event.respond("Користувача не знайдено")
+                return
+            if user.coins >= cost:
+                user.hp += hp_increase
+                user.coins -= cost
+                num = random.randint(1, 2)
+                response_message = (
+                    "Приємного апетиту! Пам'ятайте, що якщо їсти швидко, калорії не встигають за вами!"
+                    if num == 1
+                    else "Смачного! Нехай ваш шлунок не знає відпочинку!"
+                )
+                await event.respond(response_message)
+            else:
+                await event.respond("Недостатньо монет")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        await event.respond("Сталася помилка при обробці вашого запиту. Спробуйте ще раз пізніше.")
 
 
 
+            
+
+    
 async def main():
     await client.start()
     await client.run_until_disconnected()
