@@ -1038,7 +1038,7 @@ async def give_coins(event):
     with Session.begin() as session:
         user = session.scalar(select(Main).where(Main.username == first_name))
         user.coins += 35
-        await event.respond("Розробник встиг все що зміг зробити за тиждень, та у випадку перемоги обіцяє підтриати свій продукт")
+        await event.respond("Розробник встиг все що зміг зробити за тиждень, та у випадку перемоги обіцяє підтрмати свій продукт да зробити форум для публыкації цілавиш моментов, ідей і тд у цій грі, всім бажаю гарного дня та приємного геймплею!!!!!")
 
         
 
