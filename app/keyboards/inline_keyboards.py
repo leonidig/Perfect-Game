@@ -123,6 +123,10 @@ enter_1 = [
     [button.inline("Вперед за луком!!!", b'road_to_bow')]
 ]
 
+without_heal = [
+    button.inline("Некст", b'road_to_bow')
+]
+
 
 second_question = [
     [button.inline("[1, 4, 9]", b'q2_false_1')],
@@ -309,10 +313,39 @@ visit_shop = [
     button.inline("Гуляти по базі", b'visit_shop')
 ]
 
-shop_kb = [
+shop = [
     [button.inline("Королівська запіканка (12 коп + 10 хп)", b'shop_zapikanka')],
     [button.inline("Каша бідняка з медом (5 коп + 4 хп)", b'shop_kasha')],
     [button.inline("Гарячий хліб з часниковим маслом (8 коп + 9 хп)", b'shop_hleb')],
     [button.inline("Крем-суп з гарбуза та моркви (15 коп + 14 хп)", b'shop_soup')],
     [button.inline("Запечена свинина з лісовими грибами (22 коп + 17 хп)", b'shop_svinina')],
+]
+
+
+stroll = [
+    button.inline("Ходити по базі гільдії", b'stroll')
+]
+
+
+help_npc = [
+    [button.inline("Допомогти", b'help')],
+    [button.inline("Ігнорувати", b"ignore")]
+]
+
+
+go_hunting = [
+    button.inline("Йти полювати", b'go_hunting')
+]
+
+
+hit_the_boar = [
+    button.inline("Стріляти", b'hit_the_boar')
+]
+
+walk_in_forest = [
+    button.inline("Йти далі", b'walk_in_forest')
+]
+
+second_hit = [
+    button.inline("Стріляю!", b'second_hit')
 ]

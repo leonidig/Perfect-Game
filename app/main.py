@@ -22,7 +22,9 @@ from forks.plots import (plots,
                          npc,
                          test_bow,
                          road_to_enchanter,
-                         view_shop
+                         view_shop,
+                         stroll_plot, 
+                         find_boar
                          )
 
 from forks.collision import start_collision
@@ -452,6 +454,7 @@ async def do_attack(event):
                     f"Монстр пав! Твій герой має {hero.hp} здоров'я.\nТобі випало:\n-Хілки: 2\nСтріли: 5\nМонети: 15\nТи можеш використати хілку щоб збільшити своє хп на 15\nКількість хілок: {user.heal}",
                     buttons=inline_keyboards.enter_1
                 )
+                await event.respond("Йти далі", buttons = inline_keyboards.without_heal)
                 return
 
         hero.hp -= monster_damage
@@ -834,7 +837,7 @@ async def comeback_to_guild(event):
 
 @client.on(events.CallbackQuery(pattern=b'thx'))
 async def thx(event):
-    guard_location_path = "app/assets/ZAGLUSHKA.png"
+    guard_location_path = "app/assets/guardian.gif"
     await client.send_file(event.chat_id, guard_location_path, caption="Охоронець: Слухай, я тебе тут не бачив ще", buttons=inline_keyboards.for_guard)
 
 
@@ -912,11 +915,12 @@ async def visit_shop(event):
     await event.respond(view_shop)
 
 
+
 @client.on(events.NewMessage(pattern='/shop'))
 async def shop(event):
     shop_path = "app/assets/shop.png"
-    await client.send_file(event.chat_id, shop_path, caption="Заходь до магазину\nТрапеза:", buttons=inline_keyboards.shop_kb)
-    await event.respond("Або йти далі")
+    await client.send_file(event.chat_id, shop_path, caption="Зaходь до нас!\nТрапеза:", buttons=inline_keyboards.shop)
+    await event.respond("Чи можеш йти далі", buttons=inline_keyboards.stroll)
 
 
 PRODUCTS = {
@@ -960,7 +964,70 @@ async def buy_product(event):
 
 
 
-            
+@client.on(events.CallbackQuery(pattern=b'stroll'))
+async def stroll(event):
+    await event.respond(stroll_plot, buttons=inline_keyboards.help_npc)
+
+
+@client.on(events.CallbackQuery(pattern=b'help'))
+async def help_npc(event):
+    await event.respond(find_boar, buttons=inline_keyboards.go_hunting)
+
+
+@client.on(events.CallbackQuery(pattern=b'go_hunting'))
+async def go_hunting(event):
+    await event.respond("Ви обережно ходите по лісу у пошуках кабана\nІ тут Сон говорить що бачить у кустах кабана,в тебе ж є лук,бери його і стріляй в кабана!", buttons=inline_keyboards.hit_the_boar)
+
+def random_():
+    """arg1 = 1 ; arg2 = 2 ; return random integer"""
+    number = random.randint(1, 2)
+    return number
+
+
+@client.on(events.CallbackQuery(pattern=b'hit_the_boar'))
+async def hit_the_boar(event):
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        user.arrows -= 1
+    global died_boars
+    died_boars = 0
+    number = random_()
+    if number == 1:
+        await event.respond("Попадання! В нас вже 1/4 сердець є!", buttons=inline_keyboards.walk_in_forest)
+        died_boars += 1
+    else:
+        await event.respond("Прмах( Нічого, ще ціла ніч попереду", buttons=inline_keyboards.walk_in_forest)
+
+
+@client.on(events.CallbackQuery(pattern=b'walk_in_forest')) 
+async def walk_in_forest(event):
+    await event.respond("Ти ходив по лісу та через непроглядну темрявуви не побачили як підійшли до кабана зовсім близько, местра 3 була відстань, стріляй в нього поки ві не накнувся на тебе",buttons=inline_keyboards.second_hit)
+
+
+def hero_damage():
+    """return random int from 0 to 20"""
+    number = random.randint(0, 20)
+    return number
+
+@client.on(events.CallbackQuery(pattern=b'second_hit'))
+async def second_hit(event):
+    
+    global died_boars
+    damage = hero_damage()
+    boar_hp = 110
+    boar_damage = random.randint(10, 20)
+    with Session.begin() as session:
+        user = session.scalar(select(Main).where(Main.username == first_name))
+        user.hp -= boar_damage
+        while user.hp > 0 and boar_hp > 0:
+            boar_hp -= damage
+            await event.edit(f"Ти надав монстру {damage} урону - тепер в нього {boar_hp}\nВін задав тобі {boar_damage} урону, в тебе {user.hp}хп",buttons=inline_keyboards.second_hit)
+    
+        if user.hp <= 0:
+            await event.respond("Тебе вбив кабан")
+        elif boar_hp <= 0:
+            await event.respond("Ти вбив кабана")
+        
 
     
 async def main():
@@ -971,4 +1038,3 @@ async def main():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     client.loop.run_until_complete(main())
-    
